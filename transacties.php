@@ -9,6 +9,10 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 $id = $_GET['id'];
 
+if ($_SESSION['id'] != $id) {
+    header("location: index.php");
+    exit;
+}
 // Gebruikersgegevens ophalen
 $stmt = $pdo->prepare("SELECT * FROM user WHERE id = ?");
 $stmt->execute([$id]);
