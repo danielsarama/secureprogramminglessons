@@ -1,7 +1,7 @@
 <?php 
 session_start();
 include 'includes/db.php';
-
+//hi
 //Tables aanmaken
 include 'includes/userTable.php';
 include 'includes/transactionTable.php';
