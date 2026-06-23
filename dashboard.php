@@ -9,8 +9,8 @@ if(!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true){
 
 // als button is ingedrukt
 if($_SERVER["REQUEST_METHOD"] == "POST"){
-    $ontvanger = $_POST['ontvanger'];
-    $bedrag = $_POST['bedrag'];
+    $ontvanger =htmlspecialchars($_POST['ontvanger'], ENT_QUOTES);
+    $bedrag = htmlspecialchars($_POST['bedrag'], ENT_QUOTES);
 
     // Controleer of de ontvanger bestaat
     $stmt = $pdo->prepare("SELECT * FROM user WHERE username = ?");
@@ -22,7 +22,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         if($_SESSION['user']['balance'] >= $bedrag) {
             // Zet de transactie in de database
             $stmt = $pdo->prepare("INSERT INTO transaction (sender, receiver, amount, description) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$_SESSION['user']['id'], $ontvanger['id'], $bedrag, $_POST['omschrijving']]);
+            $stmt->execute([$_SESSION['user']['id'], $ontvanger['id'], $bedrag, htmlspecialchars($_POST['omschrijving'], ENT_QUOTES)]);
 
             // Haal het saldo van de ontvanger op
             $stmt = $pdo->prepare("SELECT balance FROM user WHERE username = ?");

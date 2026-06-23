@@ -3,7 +3,7 @@ session_start();
 include 'includes/db.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
+    $username = htmlspecialchars( $_POST['username'], ENT_QUOTES);
     $password = $_POST['password'];
     $passwordcheck = $_POST['passwordcheck'];
 
