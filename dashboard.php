@@ -19,7 +19,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     if($stmt->rowCount() == 1) {
         // Controleer of de gebruiker genoeg saldo heeft
-        if($_SESSION['user']['balance'] >= $bedrag) {
+        if($_SESSION['user']['balance'] >= $bedrag && $bedrag > 0) {
             // Zet de transactie in de database
             $stmt = $pdo->prepare("INSERT INTO transaction (sender, receiver, amount, description) VALUES (?, ?, ?, ?)");
             $stmt->execute([$_SESSION['user']['id'], $ontvanger['id'], $bedrag, htmlspecialchars($_POST['omschrijving'], ENT_QUOTES)]);
@@ -49,8 +49,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $stmt->execute([$saldo, $_SESSION['user']['id']]);
 
             $success = "Het bedrag is succesvol overgemaakt";
-        } else {
+        } else if ($_SESSION['user']['balance'] < $bedrag ){
             $error = "Je hebt niet genoeg saldo om dit bedrag over te maken";
+        }else {
+            $error = "Vul een bedrag hoger dan 0 in .";
         }
     } else {
         $error = "Deze gebruiker bestaat niet";
