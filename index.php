@@ -1,4 +1,4 @@
-<?php 
+<?php
 session_start();
 include 'includes/db.php';
 //hi
@@ -6,16 +6,53 @@ include 'includes/db.php';
 include 'includes/userTable.php';
 include 'includes/transactionTable.php';
 
+
+if (isset($_SESSION['isBlocked']) && $_SESSION['isBlocked'] === true) {
+
+    $currentTime = time();
+    $blockTime = $_SESSION['blockStartedAt'] ?? 0;
+
+    $expiryTime = 300;
+
+    if (($currentTime - $blockTime) >= $expiryTime) {
+        $_SESSION['isBlocked'] = false;
+        unset($_SESSION['blockStartedAt']);
+        $_SESSION['mistakes'] = 0;
+    }
+
+}
+
+if ($_SESSION['isBlocked'] ?? false) {
+
+    // Bereken resterende blocktijd (in seconden)
+    $currentTime = time();
+    $blockStartedAt = $_SESSION['blockStartedAt'] ?? 0;
+    $expiryTime = 300; // seconden
+    $remaining = ($blockStartedAt + $expiryTime) - $currentTime;
+    if ($remaining < 0) {
+        $remaining = 0;
+    }
+
+    $minutes = floor($remaining / 60);
+    $seconds = $remaining % 60;
+    $error = "Je bent geblockeerd. Time remaining " . str_pad($minutes, 2, "0", STR_PAD_LEFT) . ":" . str_pad($seconds, 2, "0", STR_PAD_LEFT);
+    die($error);
+
+}
+
 //Controleer of post is geset
-if($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Gebruikersnaam en wachtwoord uit post halen
     $username = $_POST['username'];
     $password = $_POST['password'];
 
+    if (!isset($_SESSION['mistakes'])) {
+        $_SESSION['mistakes'] = 0;
+    }
     // kwetsbaar voor SQL injectie
     $sql = "SELECT * FROM user WHERE username = ? AND password = ?";
 
-    if ($sql){
+    if ($sql) {
 
         $result = $pdo->prepare($sql);
         $result->execute([$username, $password]);
@@ -27,7 +64,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
 
     }
     // Controleer of er een rij is gevonden
-    if($result->rowCount() > 0) {
+    if ($result->rowCount() > 0) {
         // Gebruiker is ingelogd
         $_SESSION['loggedin'] = true;
         $_SESSION['id'] = $user['id'];
@@ -37,7 +74,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
         header("location: dashboard.php");
     } else {
         // Gebruiker is niet ingelogd
-        $error = "Gebruikersnaam of wachtwoord is onjuist";
+
+        $_SESSION["mistakes"] += 1;
+
+        if ($_SESSION['mistakes'] < 5) {
+            // Gebruiker is niet ingelogd
+            $error = "Gebruikersnaam of wachtwoord is onjuist";
+        } else {
+            $_SESSION["isBlocked"] = true;
+            $_SESSION["blockStartedAt"] = time();
+        }
     }
 
 }
@@ -46,6 +92,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,32 +100,38 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
     <!-- Voeg Tailwind CSS toe via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
     <?php include 'includes/header.php'; ?>
 
     <div class="container mx-auto mt-20 p-6 bg-white max-w-sm shadow-md rounded-md">
         <div class="flex justify-center">
-            <img src="img/Omanido1.png" alt="Omanido Logo" class="mb-6 w-1/2"> <!-- Aanpassen van de breedte naar 1/2 van de container -->
+            <img src="img/Omanido1.png" alt="Omanido Logo" class="mb-6 w-1/2">
+            <!-- Aanpassen van de breedte naar 1/2 van de container -->
         </div>
         <h2 class="text-lg text-center font-bold mb-6">Inloggen bij Omanido</h2>
-        <form action="<? echo htmlspecialchars($_SERVER["PHP_SELF"]);  ?>" method="post">
+        <form action="<? echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <div class="mb-4">
                 <label for="username" class="block text-sm font-medium text-gray-700">Gebruikersnaam:</label>
-                <input type="text" id="username" name="username" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" id="username" name="username"
+                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div class="mb-6">
                 <label for="password" class="block text-sm font-medium text-gray-700">Wachtwoord:</label>
-                <input type="password" id="password" name="password" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <input type="password" id="password" name="password"
+                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
             </div>
-            <input type="submit" value="Inloggen" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:shadow-outline">
+            <input type="submit" value="Inloggen"
+                class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:shadow-outline">
         </form>
-        <a href="register.php" class="block text-center text-sm text-blue-600 hover:underline mt-4">Nog geen account? Registreer hier</a>
+        <a href="register.php" class="block text-center text-sm text-blue-600 hover:underline mt-4">Nog geen account?
+            Registreer hier</a>
     </div>
 
     <div class="mt-4 p-2 border border-gray-300 rounded">
         <label class="block text-sm font-medium text-gray-700">Uitgevoerde SQL-query:</label>
         <textarea readonly class="mt-1 block w-full border rounded-md py-2 px-3 resize-none" rows="4"><? //als $sql bestaat geef $sql, anders geef aan dat deze nog niet is ingevuld
-        if(isset($sql)) {
+        if (isset($sql)) {
             echo $sql;
         } else {
             echo "Log in om je SQL query te zien";
@@ -86,6 +139,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
         ?></textarea>
     </div>
 
-    
+
 </body>
+
 </html>
