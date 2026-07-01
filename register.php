@@ -8,6 +8,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $passwordcheck = $_POST['passwordcheck'];
 
     if ($password == $passwordcheck) {
+        $password = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("SELECT * FROM user WHERE username = ?");
         $stmt->execute([$username]);
         if ($stmt->rowCount() == 0) {

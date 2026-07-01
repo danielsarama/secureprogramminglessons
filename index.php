@@ -49,22 +49,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!isset($_SESSION['mistakes'])) {
         $_SESSION['mistakes'] = 0;
     }
-    // kwetsbaar voor SQL injectie
-    $sql = "SELECT * FROM user WHERE username = ? AND password = ?";
+    // Select user by username only, then verify password with password_verify
+    $sql = "SELECT * FROM user WHERE username = ?";
+    $result = $pdo->prepare($sql);
+    $result->execute([$username]);
+    $user = $result->fetch();
 
-    if ($sql) {
-
-        $result = $pdo->prepare($sql);
-        $result->execute([$username, $password]);
-        $user = $result->fetch();
-
-    } else {
-
-        echo "<script type='text/javascript'>alert('Error: SQL not found. Please retry');</script>";
-
-    }
-    // Controleer of er een rij is gevonden
-    if ($result->rowCount() > 0) {
+    // Controleer of gebruiker bestaat en wachtwoord klopt
+    if ($user && password_verify($password, $user['password'])) {
         // Gebruiker is ingelogd
         $_SESSION['loggedin'] = true;
         $_SESSION['id'] = $user['id'];
